@@ -1,0 +1,151 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Premium Medical Theme & Clinic Styling */
+
+:root {
+    --primary: #0284c7;
+    --primary-light: #e0f2fe;
+    --primary-dark: #0369a1;
+    --secondary: #0d9488;
+    --secondary-light: #ccfbf1;
+    --success: #10b981;
+    --success-light: #d1fae5;
+    --warning: #f59e0b;
+    --warning-light: #fef3c7;
+    --danger: #ef4444;
+    --danger-light: #fee2e2;
+    --sidebar-bg: #0c4a6e;
+    --sidebar-hover: #075985;
+    --bg-main: #f0f9ff;
+    --card-bg: #ffffff;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --font-inter: 'Inter', sans-serif;
+}
+
+body {
+    font-family: var(--font-inter);
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Glassmorphism Panel */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+}
+
+/* Sidebar Custom Styling */
+.sisu-sidebar {
+    background: linear-gradient(180deg, var(--sidebar-bg) 0%, #082f49 100%);
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.sisu-sidebar-link {
+    color: #e0f2fe;
+    transition: all 0.2s ease;
+}
+
+.sisu-sidebar-link:hover, .sisu-sidebar-link.active {
+    background-color: var(--sidebar-hover);
+    color: #ffffff;
+    box-shadow: inset 4px 0 0 #38bdf8;
+}
+
+/* Card Improvements */
+.medical-card {
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.medical-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+}
+
+/* Clinic Accent Borders */
+.border-accent-blue { border-left: 5px solid var(--primary); }
+.border-accent-teal { border-left: 5px solid var(--secondary); }
+.border-accent-success { border-left: 5px solid var(--success); }
+.border-accent-warning { border-left: 5px solid var(--warning); }
+.border-accent-danger { border-left: 5px solid var(--danger); }
+
+/* Badges */
+.badge-received { background-color: var(--primary-light); color: var(--primary-dark); }
+.badge-progress { background-color: var(--warning-light); color: #b45309; }
+.badge-resolved { background-color: var(--success-light); color: #047857; }
+.badge-closed { background-color: #f1f5f9; color: #475569; }
+
+.badge-low { background-color: #f0fdf4; color: #166534; }
+.badge-medium { background-color: #fef3c7; color: #92400e; }
+.badge-high { background-color: #fff7ed; color: #9a3412; }
+.badge-critical { background-color: #fef2f2; color: #991b1b; }
+
+/* Timeline for Response */
+.timeline-container {
+    position: relative;
+    padding-left: 24px;
+}
+.timeline-container::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 5px;
+    bottom: 5px;
+    width: 2px;
+    background-color: #e2e8f0;
+}
+.timeline-dot {
+    position: absolute;
+    left: 0;
+    top: 5px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: #fff;
+    border: 3px solid var(--primary);
+}
+.timeline-dot.system {
+    border-color: #cbd5e1;
+}
+
+/* Micro-animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.4s ease forwards;
+}
+
+/* Welcome page styles */
+.clinic-welcome-bg {
+    background: radial-gradient(circle at top right, #e0f2fe 0%, #f0f9ff 100%);
+}
