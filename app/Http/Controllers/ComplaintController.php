@@ -7,17 +7,17 @@ use App\Models\ComplaintCategory;
 use App\Models\ComplaintResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ComplaintController extends Controller
 {
     /**
-     * Display a listing of complaints in the dashboard.
+     * Build query with filters applied (shared logic).
      */
-    public function index(Request $request)
+    private function buildFilteredQuery(Request $request)
     {
         $query = Complaint::with('category')->latest();
 
-        // Search
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
@@ -27,25 +27,147 @@ class ComplaintController extends Controller
             });
         }
 
-        // Filter Category
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->input('category_id'));
         }
 
-        // Filter Status
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
         }
 
-        // Filter Priority
         if ($request->filled('priority')) {
             $query->where('priority', $request->input('priority'));
         }
 
+        return $query;
+    }
+
+    /**
+     * Display a listing of complaints in the dashboard.
+     */
+    public function index(Request $request)
+    {
+        $query = $this->buildFilteredQuery($request);
         $complaints = $query->paginate(10)->withQueryString();
         $categories = ComplaintCategory::all();
 
         return view('complaints.index', compact('complaints', 'categories'));
+    }
+
+    /**
+     * Export complaints to PDF with filters.
+     */
+    public function exportPdf(Request $request)
+    {
+        $complaints = $this->buildFilteredQuery($request)->get();
+        $categories = ComplaintCategory::all()->keyBy('id');
+        $filters = [
+            'search' => $request->input('search'),
+            'category' => $request->filled('category_id') ? ($categories[$request->input('category_id')]->name ?? '-') : 'Semua',
+            'status' => $request->input('status'),
+            'priority' => $request->input('priority'),
+        ];
+
+        $statusLabels = [
+            'received' => 'Diterima',
+            'in_progress' => 'Diproses',
+            'resolved' => 'Selesai',
+            'closed' => 'Ditutup',
+        ];
+
+        $priorityLabels = [
+            'low' => 'Rendah',
+            'medium' => 'Sedang',
+            'high' => 'Tinggi',
+            'critical' => 'Critical',
+        ];
+
+        $stats = [
+            'total' => $complaints->count(),
+            'received' => $complaints->where('status', 'received')->count(),
+            'in_progress' => $complaints->where('status', 'in_progress')->count(),
+            'resolved' => $complaints->where('status', 'resolved')->count(),
+            'closed' => $complaints->where('status', 'closed')->count(),
+        ];
+
+        $pdf = Pdf::loadView('complaints.export-pdf', compact(
+            'complaints', 'categories', 'filters', 'statusLabels', 'priorityLabels', 'stats'
+        ));
+        $pdf->setPaper('A4', 'landscape');
+
+        return $pdf->download('laporan-pengaduan-' . date('Y-m-d-His') . '.pdf');
+    }
+
+    /**
+     * Export complaints to CSV with filters.
+     */
+    public function exportCsv(Request $request)
+    {
+        $complaints = $this->buildFilteredQuery($request)->get();
+        $categories = ComplaintCategory::all()->keyBy('id');
+
+        $statusLabels = [
+            'received' => 'Diterima',
+            'in_progress' => 'Diproses',
+            'resolved' => 'Selesai',
+            'closed' => 'Ditutup',
+        ];
+
+        $priorityLabels = [
+            'low' => 'Rendah',
+            'medium' => 'Sedang',
+            'high' => 'Tinggi',
+            'critical' => 'Critical',
+        ];
+
+        $filename = 'laporan-pengaduan-' . date('Y-m-d-His') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function () use ($complaints, $categories, $statusLabels, $priorityLabels) {
+            $handle = fopen('php://output', 'w');
+
+            // BOM for Excel UTF-8 support
+            fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+            // Header row
+            fputcsv($handle, [
+                'No Tiket',
+                'Tanggal Masuk',
+                'Nama Pengadu',
+                'No. Telepon',
+                'Email',
+                'Kategori',
+                'Subjek',
+                'Deskripsi',
+                'Prioritas',
+                'Status',
+                'Tanggal Update',
+            ]);
+
+            foreach ($complaints as $c) {
+                fputcsv($handle, [
+                    '#' . $c->id,
+                    $c->created_at->format('d-m-Y H:i'),
+                    $c->complainant_name,
+                    $c->complainant_phone ?? '-',
+                    $c->complainant_email ?? '-',
+                    $categories[$c->category_id]->name ?? '-',
+                    $c->subject,
+                    strip_tags($c->description),
+                    $priorityLabels[$c->priority] ?? $c->priority,
+                    $statusLabels[$c->status] ?? $c->status,
+                    $c->updated_at->format('d-m-Y H:i'),
+                ]);
+            }
+
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     /**

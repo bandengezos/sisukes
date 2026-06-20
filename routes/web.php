@@ -31,6 +31,8 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
 
     // Complaint Management
     Route::get('/complaints', [ComplaintController::class, 'index'])->name('complaints.index');
+    Route::get('/complaints/export/pdf', [ComplaintController::class, 'exportPdf'])->name('complaints.export.pdf');
+    Route::get('/complaints/export/csv', [ComplaintController::class, 'exportCsv'])->name('complaints.export.csv');
     Route::get('/complaints/{id}', [ComplaintController::class, 'show'])->name('complaints.show');
     Route::put('/complaints/{id}/status', [ComplaintController::class, 'updateStatus'])->name('complaints.status');
     Route::post('/complaints/{id}/respond', [ComplaintController::class, 'respond'])->name('complaints.respond');
