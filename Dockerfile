@@ -8,7 +8,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM php:8.3-fpm-alpine AS build
+FROM php:8.3-fpm-alpine AS base
 
 # Install dependencies
 RUN apk add --no-cache \
@@ -53,15 +53,6 @@ COPY --from=frontend /app/public/build /app/public/build
 # Install dependencies (production only)
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Generate app key for build (will be overridden by env)
-RUN php artisan key:generate --force
-
-# Optimize Laravel
-RUN php artisan config:cache \
-    && php artisan route:cache \
-    && php artisan view:cache \
-    && php artisan event:cache
-
 # Set permissions
 RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache \
     && chmod -R 775 /app/storage /app/bootstrap/cache
@@ -72,11 +63,26 @@ COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 # Copy supervisord config
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Create storage link script
+# Create entrypoint script (runs at container start)
 RUN echo '#!/bin/sh' > /docker-entrypoint.sh \
-    && echo 'php artisan storage:link --force' >> /docker-entrypoint.sh \
-    && echo 'php artisan migrate --force' >> /docker-entrypoint.sh \
-    && echo '/usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf' >> /docker-entrypoint.sh \
+    && echo 'set -e' >> /docker-entrypoint.sh \
+    && echo '' >> /docker-entrypoint.sh \
+    && echo '# Generate APP_KEY if not set' >> /docker-entrypoint.sh \
+    && echo 'if [ -z "$APP_KEY" ]; then' >> /docker-entrypoint.sh \
+    && echo '    php artisan key:generate --force' >> /docker-entrypoint.sh \
+    && echo 'fi' >> /docker-entrypoint.sh \
+    && echo '' >> /docker-entrypoint.sh \
+    && echo '# Optimize Laravel (cache config, routes, views)' >> /docker-entrypoint.sh \
+    && echo 'php artisan optimize' >> /docker-entrypoint.sh \
+    && echo '' >> /docker-entrypoint.sh \
+    && echo '# Create storage symlink' >> /docker-entrypoint.sh \
+    && echo 'php artisan storage:link --force 2>/dev/null || true' >> /docker-entrypoint.sh \
+    && echo '' >> /docker-entrypoint.sh \
+    && echo '# Run migrations' >> /docker-entrypoint.sh \
+    && echo 'php artisan migrate --force 2>/dev/null || true' >> /docker-entrypoint.sh \
+    && echo '' >> /docker-entrypoint.sh \
+    && echo '# Start supervisor' >> /docker-entrypoint.sh \
+    && echo 'exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf' >> /docker-entrypoint.sh \
     && chmod +x /docker-entrypoint.sh
 
 EXPOSE 8080
