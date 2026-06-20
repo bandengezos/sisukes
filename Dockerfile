@@ -10,7 +10,7 @@ RUN npm run build
 
 FROM php:8.3-fpm-alpine AS base
 
-# Install dependencies
+# Install dependencies (including PostgreSQL dev headers)
 RUN apk add --no-cache \
     nginx \
     supervisor \
@@ -22,7 +22,9 @@ RUN apk add --no-cache \
     libzip-dev \
     libpng-dev \
     libjpeg-turbo-dev \
-    freetype-dev
+    freetype-dev \
+    postgresql-dev \
+    postgresql-libs
 
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
